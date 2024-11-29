@@ -1,15 +1,25 @@
+import pytest
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
 
-# Set up WebDriver
-driver = webdriver.Chrome()  # Ensure ChromeDriver matches your browser version
+# Fixture to set up and tear down WebDriver
+@pytest.fixture(scope="module")
+def driver():
+    # Set up the WebDriver using the Service class
+    service = Service('../driver/chromedriver-win64/chromedriver.exe')  # Update path to match your chromedriver
+    driver = webdriver.Chrome(service=service)
+    driver.maximize_window()
+    yield driver
+    driver.quit()
 
-try:
+# Test case for "Forgot your password?" functionality
+@pytest.mark.forgot_password
+def test_forgot_password(driver):
     # Navigate to the login page
     driver.get("https://opensource-demo.orangehrmlive.com/web/index.php/auth/login")
-    driver.maximize_window()
     print("Navigated to OrangeHRM login page.")
 
     # Wait for the "Forgot your password?" link to be visible
@@ -44,12 +54,5 @@ try:
 
     # Check for success message
     success_message = driver.find_element(By.XPATH, "//p[contains(text(),'Reset link sent')]")
-    if success_message.is_displayed():
-        print("Password reset successful. Check your email for instructions.")
-    else:
-        print("Password reset failed. No success message displayed.")
-
-finally:
-    # Close the browser after testing
-    input("Press Enter to close the browser...")
-    driver.quit()
+    assert success_message.is_displayed(), "Password reset failed. No success message displayed."
+    print("Password reset successful. Check your email for instructions.")
